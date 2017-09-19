@@ -4,6 +4,7 @@ from flask_bcrypt import Bcrypt
 # Local imports
 from app import db
 
+
 class User(db.Model):
 
     __tablename__ = 'users'
@@ -14,7 +15,8 @@ class User(db.Model):
     last_name = db.Column(db.String(50), nullable=False)
     email = db.Column(db.String(120), nullable=False, index=True, unique=True)
     password = db.Column(db.String(120), nullable=False)
-    bucketlists = db.relationship('Bucketlist', backref="users", cascade="all, delete-orphan", lazy="dynamic")
+    bucketlists = db.relationship(
+        'Bucketlist', backref="users", cascade="all, delete-orphan", lazy="dynamic")
 
     def __init__(self, email, password):
         """Initialize the user with an email and a password."""
@@ -33,9 +35,10 @@ class User(db.Model):
         """
         db.session.add(self)
         db.session.commit()
-    
+
     def __repr__(self):
-      return "<User: {}>".format(self.name)
+        return "<User: {}>".format(self.name)
+
 
 class Bucketlist(db.Model):
 
@@ -44,14 +47,16 @@ class Bucketlist(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     bucket_name = db.Column(db.String(120), nullable=False, unique=True)
     date_created = db.Column(db.DateTime, default=db.func.current_timestamp())
-    date_modified = db.Column(db.DateTime, default=db.func.current_timestamp(), 
-    onupdate=db.func.current_timestamp())
+    date_modified = db.Column(db.DateTime, default=db.func.current_timestamp(),
+                              onupdate=db.func.current_timestamp())
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    items = db.relationship('Item', backref="bucketlists", cascade="all, delete-orphan", lazy="dynamic")
-    
-    def __init__(bucket_name):
+    items = db.relationship('Item', backref="bucketlists",
+                            cascade="all, delete-orphan", lazy="dynamic")
+
+    def __init__(bucket_name, user_id):
         """Initialize the Bucket."""
         self.bucket_name = bucket_name
+        self.user_id = user_id
 
     def save(self):
         """Save a Bucket to the database.
@@ -64,12 +69,14 @@ class Bucketlist(db.Model):
         db.session.delete(self)
         db.session.commit()
 
+    """Gets all buckets by a specific user"""
     @staticmethod
-    def get_all():
-        return Bucketlist.query.all()
+    def get_all(user_id):
+        return Bucketlist.query.filter_by(user_id=user_id)
 
     def __repr__(self):
-      return "<Bucketlist: {}>".format(self.name)
+        return "<Bucketlist: {}>".format(self.name)
+
 
 class Item(db.Model):
 
@@ -78,13 +85,15 @@ class Item(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     item_name = db.Column(db.String(120), nullable=False, unique=True)
     date_created = db.Column(db.DateTime, default=db.func.current_timestamp())
-    date_modified = db.Column(db.DateTime, default=db.func.current_timestamp(), 
-    onupdate=db.func.current_timestamp())
-    bucket_id = db.Column(db.Integer, db.ForeignKey('bucketlists.id'), nullable=False)
-    
-    def __init__(item_name):
+    date_modified = db.Column(db.DateTime, default=db.func.current_timestamp(),
+                              onupdate=db.func.current_timestamp())
+    bucket_id = db.Column(db.Integer, db.ForeignKey(
+        'bucketlists.id'), nullable=False)
+
+    def __init__(item_name, bucket_id):
         """Initialize the Item."""
         self.item_name = item_name
+        self.bucket_id = bucket_id
 
     def save(self):
         """Save an Item to the database."""
@@ -92,4 +101,4 @@ class Item(db.Model):
         db.session.commit()
 
     def __repr__(self):
-      return "<Item: {}>".format(self.name)
+        return "<Item: {}>".format(self.name)
