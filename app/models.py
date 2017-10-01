@@ -1,14 +1,11 @@
-from app import db
 from flask_bcrypt import Bcrypt
-
-# Local imports
 from app import db
 
 
 class User(db.Model):
+    """This class represents the bucketlist table."""
 
     __tablename__ = 'users'
-    # Define the columns of the User table
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(120), nullable=False, unique=True)
     first_name = db.Column(db.String(50), nullable=False)
@@ -16,10 +13,13 @@ class User(db.Model):
     email = db.Column(db.String(120), nullable=False, index=True, unique=True)
     password = db.Column(db.String(120), nullable=False)
     bucketlists = db.relationship(
-        'Bucketlist', backref="users", cascade="all, delete-orphan", lazy="dynamic")
+        'Bucketlist', order_by='Bucketlist.id', cascade="all, delete-orphan", lazy="dynamic")
 
-    def __init__(self, email, password):
+    def __init__(self, email, first_name, last_name, username, password):
         """Initialize the user with an email and a password."""
+        self.username = username
+        self.first_name = first_name
+        self.last_name = last_name
         self.email = email
         self.password = Bcrypt().generate_password_hash(password).decode()
 
@@ -35,70 +35,73 @@ class User(db.Model):
         """
         db.session.add(self)
         db.session.commit()
+    
+    def generate_token(self, user_id):
+        """ Generates the access token"""
+
+        try:
+            payload = {
+                'exp': datetime.utcnow() + timedelta(minutes=30),
+                'iat': datetime.utcnow(),
+                'sub': user_id
+            }
+            # create the byte string token using the payload and the SECRET key
+            jwt_string = jwt.encode(
+                payload,
+                current_app.config.get('SECRET'),
+                algorithm='HS256'
+            )
+            return jwt_string
+
+        except Exception as e:
+            # return an error in string format if an exception occurs
+            return str(e)
+    @staticmethod
+    def decode_token(token):
+        """Decodes the access token from the header."""
+        try:
+            payload = jwt.decode(token, current_app.config.get('SECRET'))
+            return payload['sub']
+        except jwt.ExpiredSignatureError:
+            # the token is expired, return an error string
+            return "Token has expired. Please login again"
+        except jwt.InvalidTokenError:
+            # the token is invalid, return an error string
+            return "Invalid token. Please register or try again"
 
     def __repr__(self):
         return "<User: {}>".format(self.name)
 
-
 class Bucketlist(db.Model):
+    """This class represents the bucketlist table."""
 
     __tablename__ = 'bucketlists'
-    # Define the columns of the Bucketlist table
-    id = db.Column(db.Integer, primary_key=True)
-    bucket_name = db.Column(db.String(120), nullable=False, unique=True)
-    date_created = db.Column(db.DateTime, default=db.func.current_timestamp())
-    date_modified = db.Column(db.DateTime, default=db.func.current_timestamp(),
-                              onupdate=db.func.current_timestamp())
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    items = db.relationship('Item', backref="bucketlists",
-                            cascade="all, delete-orphan", lazy="dynamic")
 
-    def __init__(bucket_name, user_id):
-        """Initialize the Bucket."""
+    id = db.Column(db.Integer, primary_key=True)
+    bucket_name = db.Column(db.String(100), nullable=False, unique=True)
+    date_created = db.Column(db.DateTime, default=db.func.current_timestamp())
+    date_modified = db.Column(
+        db.DateTime, default=db.func.current_timestamp(),
+        onupdate=db.func.current_timestamp())
+    belongs_to = db.Column(db.Integer, db.ForeignKey(User.id))
+
+    def __init__(self, bucket_name):
+        """Initialize with bucket_name."""
         self.bucket_name = bucket_name
-        self.user_id = user_id
 
     def save(self):
-        """Save a Bucket to the database.
-        This includes creating a new user and editing one.
-        """
         db.session.add(self)
         db.session.commit()
+
+    @staticmethod
+    def get_all(user_id):
+        """Return buckets belonging to a user."""
+        return Bucketlist.query.filter_by(belongs_to=user_id)
 
     def delete(self):
         db.session.delete(self)
         db.session.commit()
 
-    """Gets all buckets by a specific user"""
-    @staticmethod
-    def get_all(user_id):
-        return Bucketlist.query.filter_by(user_id=user_id)
-
     def __repr__(self):
+        """Representation of a bucketlist instance."""
         return "<Bucketlist: {}>".format(self.name)
-
-
-class Item(db.Model):
-
-    __tablename__ = 'items'
-    # Define the columns of the Items table
-    id = db.Column(db.Integer, primary_key=True)
-    item_name = db.Column(db.String(120), nullable=False, unique=True)
-    date_created = db.Column(db.DateTime, default=db.func.current_timestamp())
-    date_modified = db.Column(db.DateTime, default=db.func.current_timestamp(),
-                              onupdate=db.func.current_timestamp())
-    bucket_id = db.Column(db.Integer, db.ForeignKey(
-        'bucketlists.id'), nullable=False)
-
-    def __init__(item_name, bucket_id):
-        """Initialize the Item."""
-        self.item_name = item_name
-        self.bucket_id = bucket_id
-
-    def save(self):
-        """Save an Item to the database."""
-        db.session.add(self)
-        db.session.commit()
-
-    def __repr__(self):
-        return "<Item: {}>".format(self.name)
