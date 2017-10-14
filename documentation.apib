@@ -1,0 +1,174 @@
+FORMAT: 1A
+
+# Bucketlist API
+
+
+## Specifics
+The endpoints of the API require authentication except login and creating a user.
+
+## Users Enpoints
+
+### Create a new user  [POST /auth/register]
+
+- Creates a new user.
+- You may create a new user who could own an account, or they could as well register and it calls this endpoint.
+- The following fields are required:
+
++ First Name
++ Last Name
++ Username
++ Email address
++ Password
+
++ Request (application/json)
+
+      {
+        "first_name": "Mercy",
+        "last_name": "Much",
+        "username": "muchai",
+        "email": "muchai@gmail.com",
+        "password": muchai
+      }
+
++ Response 201 (application/json)
+
+          {
+             "id": 2,
+             "first_name": "Mercy",
+             "last_name": "Much",
+             "username": "muchai",
+             "email": "muchai@gmail.com",
+             "password": "$2a$04$i4/3DK9Ief7j62VD57FwiObL6Vn96dImJmIoWeCFrdlSnk7idK1we"
+          }
+
+### Login a User [POST /auth/login]
+
+Logs in an existing user.
+
+- The following fields are required:
++ Email address
++ Password
+
++ Request (application/json)
+
+          {
+              "username": "muchai@gmail.com",
+              "password": "muchai"
+          }
+
++ Response 200 (application/json)
+
+          {
+           "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJkYXRhIjp7ImlkIjoyMiwidXNlcm5hbWUiOiJtdWNoYWkiLCJyb2xlIjoiVXNlciJ9LCJpYXQiOjE0OTg1NTIzMjIsImV4cCI6MTQ5ODYzODcyMn0.pHHoHqEeB02m2LNj6r65EZ8NMTLKsry0Sn_csgAvdOY"
+           "message": "You logged in successfully."
+          }
+
+## Bucketlists Endpoints
+
+- All Bucketlists endpoints require authentication. They are specific to the user. 
+
+### create a bucketlist [POST /bucketlists/]
+- Creates a new bucketlist specific to the user.
++ Requires authentication. 
++ To authenticate: Enter Authorization on Headers as the Key. 
++ On the value input field:, type Bearer, space, input the access_token received from the login endpoint
+- The following fields are required:
+
++ bucket_name
+
++ Request (application/json)
+
+          {
+            bucket_name: 'Buy a waterraft',
+          }
+
++ Response 201 (application/json)
+  {
+  "belongs_to": 2, 
+  "bucket_name": "Buy a waterraft", 
+  "date_created": "Sat, 14 Oct 2017 12:50:33 GMT", 
+  "date_modified": "Sat, 14 Oct 2017 12:50:33 GMT", 
+  "id": 1
+  }
+
+
+### list bucketlists [GET /bucketlists]
+
+- Lists all existing bucketlists. Logged in users can view all goals/bucketlists they created.
++ Requires authentication
+
++ Response 200 (application/json)
+[
+  {
+  "belongs_to": 2, 
+  "bucket_name": "Buy a waterraft", 
+  "date_created": "Sat, 14 Oct 2017 12:50:33 GMT", 
+  "date_modified": "Sat, 14 Oct 2017 12:50:33 GMT", 
+  "id": 1
+  }
+]
+
+### Get a specific bucketlist [GET /bucketlists/:id]
+- Gets a bucketlist with the ID provided.
+- For example: `/bucketlists/1`
++ Requires authentication
+
+ - If the bucketlist does not exist:
+ + Response 404 (application/json)
+          {
+            "message": "Oops!Looks like that bucketlist does not exist"
+          }
++ Response 200 (application/json).
+
+  {
+  "belongs_to": 2, 
+  "bucket_name": "Buy a waterraft", 
+  "date_created": "Sat, 14 Oct 2017 12:50:33 GMT", 
+  "date_modified": "Sat, 14 Oct 2017 12:50:33 GMT", 
+  "id": 1
+  }
+
+### Update a bucketlist [PUT /bucketlists/:id]
+Updates the bucketlist whose id is provided.
+-  For example: `/bucketlists/1`
++ Requires authentication
+- The following fields are required:
++ bucket_name
+
+ - If the bucketlist does not exist:
+ + Response 404 (application/json)
+          {
+            "message": "Oops!Looks like that bucketlist does not exist"
+          }
+          
++ Request (application/json)
+
+          {
+            bucket_name: 'Buy a car',
+          }
+
+
++ Response 200 (application/json)
+
+  {
+  "bucket_name": "Buy a car", 
+  "date_created": "Sat, 14 Oct 2017 12:50:33 GMT", 
+  "date_modified": "Sat, 14 Oct 2017 12:56:17 GMT", 
+  "id": 24
+  }
+
+### Deletes a bucketlist [DELETE /bucketlists/:id]
+
+- Deletes the bucketlist whose id has been specified.
+- For example i.e `/bucketlists/1`
+- Requires authentication
+
++ Response 204 (application/json)
+
+ - If the bucketlist does not exist:
+ + Response 404 (application/json)
+          {
+            "message": "Oops!Looks like that bucketlist does not exist"
+          }
+
++ More endpoints will be documented here.

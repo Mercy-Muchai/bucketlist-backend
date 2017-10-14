@@ -48,3 +48,6 @@ Test the endpoints on Postman on the port the app is running on.
 
 ``` python manage.py test```
 
+#### API Blueprint
+
+Learn about how the API works: open the `docs.html` file found on the root of the project on a browser.
